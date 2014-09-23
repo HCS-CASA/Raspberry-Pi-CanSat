@@ -6,6 +6,7 @@ class TransmitReceive():
     def __init__(self):
         self.initVar()
         self.initSPI()
+        self.initGDO()
         self.reset()
         self.initReg()
         self.write(self.PATABLE, self.PATABELVAL)
@@ -109,13 +110,22 @@ class TransmitReceive():
         self.READ_BURST = 0xC0       #read burst
         self.BYTES_IN_RXFIFO = 0x7F  #byte number in RXfifo
         
+        #pin settings
+        self.GDO0 = 23
+        self.GDO2 = 24
+        
         #Patable
-        self.PATABELVAL = [0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60]
+        self.PATABELVAL = [0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0]
         
     def initSPI(self):
         self.spi = spidev.SpiDev()
         self.spi.open(0,0)
         self.spi.cshigh = False
+        
+    def initGDO(self):
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setup(self.GDO0, GPIO.IN)
+        GPIO.setup(self.GDO2, GPIO.IN)
         
     def reset(self):
         self.write(self.SRES)
@@ -175,7 +185,7 @@ class TransmitReceive():
             if isinstance(val, int):
                 val = [val]
             elif not isinstance(val, list):
-                raise TypeError("val must be a list or an integer")
+                raise TypeError("Value must be List or Integer")
             data.extend(val)
         else:
             data = [addr]

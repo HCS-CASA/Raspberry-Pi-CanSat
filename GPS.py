@@ -1,83 +1,141 @@
-import serial, csv
+import serial, csv, Queue, threading, time
 
-def degrees(raw):
-  if raw[0] == '0':
-    degrees = round(int(raw[1:3]) + float(raw[3:]) / 60, 6)
-    degrees -= 2 * degrees
-  else:
-    degrees = round(int(raw[0:2]) + float(raw[2:]) / 60, 6)
-  return degrees
-
-port = serial.Serial("/dev/ttyAMA0", baudrate=9600, timeout=0)
-sentenceStack = [['']]
-checkStack = []
-processStack = []
-
-lat = NS = lng = EW = alt = speed = date = time = sats = hdop = ''
-
-with open('gps.csv', 'w') as csvfile:
-  csvwriter = csv.writer(csvfile, dialect='excel')
-  csvwriter.writerow(['date', 'time', 'sats', 'lat', 'NS', 'lng', 'EW', 'alt', 'speed', 'hdop'])
-
-while True:
-  if port.inWaiting() > 0:
-    lastChar = port.read()
-    if lastChar == '$':
-      sentenceStack.append([lastChar])
-    elif lastChar == '\n' or lastChar == '\r':
-      pass
-    elif lastChar == ',' or lastChar == '*':
-      sentenceStack[len(sentenceStack) - 1].append('')
+class GPS():
+  def __init__(self):
+    self.date = ''
+    self.time = ''
+    self.sats = ''
+    self.lat = ''
+    self.NS = ''
+    self.lng = ''
+    self.EW = ''
+    self.alt = ''
+    self.speed = ''
+    self.hdop = ''
+    
+    self.port = serial.Serial("/dev/ttyAMA0", baudrate=9600, timeout=0)
+    
+    self.workingSentence = ['$']
+    self.sentenceQueue = Queue.Queue()
+    self.checkQueue = Queue.Queue()
+    self.processQueue = Queue.Queue()
+    
+  def degrees(self, raw):
+    if raw:
+      if raw[0] == '0':
+        degrees = round(int(raw[1:3]) + float(raw[3:]) / 60, 6)
+        degrees -= 2 * degrees
+      else:
+        degrees = round(int(raw[0:2]) + float(raw[2:]) / 60, 6)
+      return degrees
     else:
-      sentenceStack[len(sentenceStack) - 1][len(sentenceStack[len(sentenceStack) - 1]) - 1] += lastChar
-
-  while len(sentenceStack) > 1:
-    if sentenceStack[0][0] == '$GPGGA' or sentenceStack[0][0] == '$GPRMC':
-      checkStack.append(sentenceStack[0])
-    del sentenceStack[0]
+      return None
+  
+  def readData(self):    
+    while self.port.inWaiting() > 0:
+      lastChar = self.port.read()
+      if lastChar == '$':
+        if self.workingSentence:
+          self.sentenceQueue.put(self.workingSentence)
+          self.workingSentence = ['$']
+      elif lastChar == '\n' or lastChar == '\r':
+        pass
+      elif lastChar == ',' or lastChar == '*':
+        self.workingSentence.append('')
+      else:
+        self.workingSentence[-1] += lastChar
     
-  for sentence in checkStack:
-    sentence[0] = sentence[0][1:]
-    check = int(sentence[len(sentence) - 1], 16)
-    del sentence[len(sentence) - 1]
+    while True:
+      try:
+        currentSentence = self.sentenceQueue.get(False)
+        if currentSentence[0] == '$GPGGA' or currentSentence[0] == '$GPRMC':
+          self.checkQueue.put(currentSentence)
+        self.sentenceQueue.task_done()
+      except Queue.Empty:
+        break
     
-    check2 = 0
-    for j in ','.join(sentence):
-      check2 = check2 ^ ord(j)
+    while True:
+      try:
+        currentSentence = self.checkQueue.get(False)
+        currentSentence[0] = currentSentence[0][1:]
+        check = int(currentSentence[-1], 16)
+        del currentSentence[-1]
+        
+        calculatedCheck = 0
+        for j in ','.join(currentSentence):
+          calculatedCheck = calculatedCheck ^ ord(j)
       
-    if check == check2:
-      processStack.append(sentence)
+        if check == calculatedCheck:
+          self.processQueue.put(currentSentence)
+          
+        self.checkQueue.task_done()
+      except Queue.Empty:
+        break
     
-  checkStack = []
+    while True:
+      try:
+        currentSentence = self.processQueue.get(False)
+        self.time = currentSentence[1][0:2] + ':' + currentSentence[1][2:4] + ':' + currentSentence[1][4:6]
+          
+        if currentSentence[0] == 'GPGGA':
+          self.sats = currentSentence[7]
+          self.hdop = currentSentence[8]    
+          if currentSentence[6] > 0:
+            self.lat = self.degrees(currentSentence[2])
+            self.NS = currentSentence[3]
+            self.lng = self.degrees(currentSentence[4])
+            self.EW = currentSentence[5]
+            self.alt = currentSentence[9]
+          else:
+            self.lat = self.NS = self.lng = self.EW = self.alt = ''
+        
+        elif currentSentence[0] == 'GPRMC':
+          self.date = currentSentence[9][0:2] + '/' + currentSentence[1][2:4] + '/' + currentSentence[1][4:6]
+          if currentSentence[2] == 'A':
+            self.lat = self.degrees(currentSentence[3])
+            self.NS = currentSentence[4]
+            self.lng = self.degrees(currentSentence[5])
+            self.EW = currentSentence[6]
+            self.speed = currentSentence[7]
+          else:
+            self.lat = self.NS = self.lng = self.EW = self.speed = ''
+            
+      except Queue.Empty:
+        break
+    
+  def readDataThread(self):
+    while self.runThread:
+      self.readData()
+    
+  def startRead(self):
+    self.runThread = True
+    self.readData() #Block this (main) thread until the initial set of data as been obtained
+    self.readThread = threading.Thread(target=self.readDataThread) #Use a thread for the remaining reads
+    self.readThread.start()
+    
+  def stopRead(self):
+    self.runThread = False
+    self.readThread.join()
   
-  for sentence in processStack:
-    time = sentence[1][0:2] + ':' + sentence[1][2:4] + ':' + sentence[1][4:6]
-    
-    if sentence[0] == 'GPGGA':
-      sats = sentence[7]
-      hdop = sentence[8]    
-      if sentence[6] > 0:
-        lat = degrees(sentence[2])
-        NS = sentence[3]
-        lng = degrees(sentence[4])
-        EW = sentence[5]
-        alt = sentence[9]
-      else:
-        lat = NS = lng = EW = alt = ''
-    
-    elif sentence[0] == 'GPRMC':
-      date = sentence[9][0:2] + '/' + sentence[1][2:4] + '/' + sentence[1][4:6]
-      if sentence[2] == 'A':
-        lat = degrees(sentence[3])
-        NS = sentence[4]
-        lng = degrees(sentence[5])
-        EW = sentence[6]
-        speed = sentence[7]      
-      else:
-        lat = NS = lng = EW = speed = ''
-    
-    with open('gps.csv', 'a') as csvfile:
+  def createFile(self, filename="gps.csv"):
+    with open(filename, 'w') as csvfile:
       csvwriter = csv.writer(csvfile, dialect='excel')
-      csvwriter.writerow([date, time, sats, lat, NS, lng, EW, alt, speed, hdop])
+      csvwriter.writerow(['date', 'time', 'sats', 'lat', 'NS', 'lng', 'EW', 'alt', 'speed', 'hdop'])
   
-  processStack = []
+  def writeData(self, filename="gps.csv"):
+    with open(filename, 'a') as csvfile:
+      csvwriter = csv.writer(csvfile, dialect='excel')
+      csvwriter.writerow(self.returnResults())
+      
+  def returnResults(self):
+    return [self.date, self.time, self.sats, self.lat, self.NS, self.lng, self.EW, self.alt, self.speed, self.hdop]
+  
+if __name__ == "__main__":
+  myGPS = GPS()
+  myGPS.createFile()
+  myGPS.startRead()
+  for i in range(0, 100):
+    myGPS.writeData()
+    print i, ': lat:', myGPS.lat, ' lng:', myGPS.lng
+    time.sleep(1)
+  myGPS.stopRead()
