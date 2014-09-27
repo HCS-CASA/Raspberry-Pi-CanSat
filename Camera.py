@@ -16,7 +16,7 @@ class camera(picamera.PiCamera):
     camera.sharpness = 0 #-100 -> 100
     camera.shutter_speed = 0 #microseconds
     camera.hflip = False
-    camear.vflip = False
+    camera.vflip = False
     
   def capture(self):
     camera.start_preview()
