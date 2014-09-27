@@ -20,7 +20,7 @@ class camera(picamera.PiCamera):
     
   def capture(self):
     if sum(os.path.getsize(file) for file in os.listdir(os.path.join(os.path.dirname(path.realpath(__file__)),"img")) if os.path.isfile(file)) < 13958643712:
-  	  self.start_preview()
+        self.start_preview()
       sleep(2)
       self.imgGen.next()
       self.stop_preview()
