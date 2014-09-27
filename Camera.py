@@ -1,11 +1,10 @@
-import picamera
-from os import path
+import picamera, os
 from time import sleep
 
 class camera(picamera.PiCamera):
   def __init__(self):
     super(camera, self).__init__()
-    self.imgGen = super(camera, self).capture_continuous(path.join(path.dirname(path.realpath(__file__)),"img/image{counter:04d}.jpg"))
+    self.imgGen = super(camera, self).capture_continuous(ps.path.join(os.path.dirname(os.path.realpath(__file__)),"img/image{counter:04d}.jpg"))
     self.resolution = (2592, 1944) #2582x1944 = Max Resoloution
     self.brightness = 50 #0 -> 100
     self.contrast = 0 #-100 -> 100
@@ -20,7 +19,8 @@ class camera(picamera.PiCamera):
     self.vflip = False
     
   def capture(self):
-    self.start_preview()
-    sleep(2)
-    self.imgGen.next()
-    self.stop_preview()
+    if sum(os.path.getsize(file) for file in os.listdir(os.path.join(os.path.dirname(path.realpath(__file__)),"img")) if os.path.isfile(file)) < 13958643712:
+  	  self.start_preview()
+      sleep(2)
+      self.imgGen.next()
+      self.stop_preview()
