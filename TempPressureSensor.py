@@ -58,9 +58,8 @@ class tempPressure(I2Clib.sensor):
 if __name__ == '__main__':
     myTempPressure = tempPressure()
     myTempPressure.createFile()
-    with open('TempPressure.csv', 'w') as csvfile: #open csv file
-      for i in range(0, 100):
-        myTempPressure.getResults()
-        myTempPressure.writeData()
-        time.sleep(1)
-        print i, "Temp:", myTempPressure.temp, "Pressure:", myTempPressure.pressure
+    for i in range(0, 100):
+      myTempPressure.getResults()
+      myTempPressure.writeData()
+      time.sleep(1)
+      print i, "Temp:", myTempPressure.temp, "Pressure:", myTempPressure.pressure

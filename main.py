@@ -57,11 +57,6 @@ class cameraThread(threading.Thread):
   def join(self):
     self.end = True
     threading.Thread.join(self)
-      
-
-myAccGyro = accGyroThread()
-myTempPressure = tempPressureThread()
-myCamera = cameraThread()
 
 #Wait Time
 waitMin = int(argv[1])
@@ -74,6 +69,10 @@ while waitMin >= 0:
   waitSec = 59
   waitMin -= 1
   
+myAccGyro = accGyroThread()
+myTempPressure = tempPressureThread()
+myCamera = cameraThread()
+
 myAccGyro.start()
 myTempPressure.start()
 myCamera.start()
