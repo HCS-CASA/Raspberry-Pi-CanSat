@@ -1,6 +1,7 @@
 Raspberry Wheezy
 ============
 http://www.raspberrypi.org/downloads/
+
 Check the sha1-sum on downloading
 
 Boot Options
@@ -10,8 +11,11 @@ sudo raspi-config
 ```
 
 SSH -> Yes
+
 Serial Console -> Yes
+
 I2C -> Yes
+
 SPI -> Yes
 
 Reboot
