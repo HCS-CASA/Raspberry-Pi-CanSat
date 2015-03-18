@@ -80,7 +80,7 @@ myCamera.start()
 while True:
   try:
     pass
-  except KeyboardInterupt: 
+  except KeyboardInterrupt: 
     myAccGyro.join()
     myTempPressure.join()
     myCamera.join()
