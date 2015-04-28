@@ -155,5 +155,12 @@ mySensors.startSensors()
 while True:
   try:
     pass
+<<<<<<< HEAD
   except KeyboardInterupt:
     mySensors.joinSensors()
+=======
+  except KeyboardInterrupt: 
+    myAccGyro.join()
+    myTempPressure.join()
+    myCamera.join()
+>>>>>>> master
