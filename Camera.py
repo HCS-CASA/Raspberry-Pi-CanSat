@@ -18,9 +18,9 @@ class camera(picamera.PiCamera):
     self.hflip = True
     self.vflip = True
     
-  def capture(self):
+  def capture(self, captureTime):
     if sum(os.path.getsize(file) for file in os.listdir(os.path.join(os.path.dirname(os.path.realpath(__file__)),"img")) if os.path.isfile(file)) < 13958643712:
         self.start_preview()
-        sleep(2)
+        sleep(captureTime)
         self.imgGen.next()
         self.stop_preview()

@@ -20,6 +20,8 @@ class GPS():
     self.checkQueue = Queue.Queue()
     self.processQueue = Queue.Queue()
     
+    self.filename = "GPS.csv"
+    
   def degrees(self, raw):
     if raw:
       if raw[0] == '0':
@@ -117,12 +119,14 @@ class GPS():
     self.runThread = False
     self.readThread.join()
   
-  def createFile(self, filename="gps.csv"):
+  def createFile(self, filename=None):
+    if not filename: filename = self.filename
     with open(filename, 'w') as csvfile:
       csvwriter = csv.writer(csvfile, dialect='excel')
       csvwriter.writerow(['date', 'time', 'sats', 'lat', 'NS', 'lng', 'EW', 'alt', 'speed', 'hdop'])
   
-  def writeData(self, filename="gps.csv"):
+  def writeData(self, filename=None):
+    if not filename: filename = self.filename
     with open(filename, 'a') as csvfile:
       csvwriter = csv.writer(csvfile, dialect='excel')
       csvwriter.writerow(self.returnResults())

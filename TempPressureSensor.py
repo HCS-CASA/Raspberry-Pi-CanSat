@@ -17,6 +17,7 @@ class tempPressure(I2Clib.sensor):
         self.mc = self.readSignedDouble(0xBC);
         self.md = self.readSignedDouble(0xBE);
         self.startTime = time.time()
+        self.filename = "TempPressure.csv"
 
     def returnConstants(self):
         #return the constants in a dictionary
@@ -43,14 +44,16 @@ class tempPressure(I2Clib.sensor):
     def returnResults(self):
         return [time.time() - self.startTime, self.temp, self.pressure]
         
-    def createFile(self, filename="TempPressure.csv"):
+    def createFile(self, filename=None):
+      if not filename: filename = self.filename
       with open(filename, 'w') as csvfile:
         csvwriter = csv.writer(csvfile, dialect='excel')
         csvwriter.writerow(list(self.returnConstants().keys())) #print the constant names
         csvwriter.writerow(list(self.returnConstants().values())) #print constant values - yes this is messy code
         csvwriter.writerow(['Time', 'Temp', 'Pressure']) #print the measurment names
     
-    def writeData(self, filename="TempPressure.csv"):
+    def writeData(self, filename=None):
+      if not filename: filename = self.filename
       with open(filename, 'a') as csvfile:
         csvwriter = csv.writer(csvfile, dialect='excel')
         csvwriter.writerow(self.returnResults())
