@@ -1,0 +1,27 @@
+{
+  "print": true,
+  "magnetometer": {
+    "active": true,
+    "dataFileName": "Magnetometer.csv",
+    "minTimePeriod": 0,
+  },
+  "pressureTemp": {
+    "active": true,
+    "dateFileName": "PressureTemp.csv",
+    "minTimePeriod": 0,
+  },
+  "accGyro": {
+    "active": true,
+    "dataFileName": "AccGyro.csv",
+    "minTimePeriod": 0,
+  },
+  "gps": {
+    "active": true,
+    "dataFileName": "GPS.csv",
+    "minTimePeriod": 0,
+  },
+  "camera": {
+    "active": true,
+    "minTimePeriod": 0,
+    "captureTime": 2,
+}
